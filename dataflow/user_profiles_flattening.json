@@ -1,0 +1,129 @@
+{
+	"name": "user_profiles_flattening",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "topproductslake",
+						"type": "DatasetReference"
+					},
+					"name": "laketopprod"
+				},
+				{
+					"dataset": {
+						"referenceName": "preferredproductscosmos",
+						"type": "DatasetReference"
+					},
+					"name": "preferredproductscosmos"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "wwiUserTopProductPurchases",
+						"type": "DatasetReference"
+					},
+					"name": "sinksynapse"
+				}
+			],
+			"transformations": [
+				{
+					"name": "flattensource"
+				},
+				{
+					"name": "flattencosmos"
+				},
+				{
+					"name": "converttoint"
+				},
+				{
+					"name": "joinlakeandcosmos"
+				},
+				{
+					"name": "derivedColumn1"
+				},
+				{
+					"name": "filter1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          visitorId as integer,",
+				"          topProductPurchases as (productId as integer, itemsPurchasedLast12Months as integer)[]",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     documentForm: 'arrayOfDocuments',",
+				"     wildcardPaths:['online-user-profiles-02/*.json']) ~> laketopprod",
+				"source(output(",
+				"          userId as integer,",
+				"          cartId as string,",
+				"          preferredProducts as string[],",
+				"          productReviews as (productId as integer, reviewText as string, reviewDate as string)[]",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'document') ~> preferredproductscosmos",
+				"laketopprod foldDown(unroll(topProductPurchases),",
+				"     mapColumn(",
+				"          visitorId,",
+				"          productId = topProductPurchases.productId,",
+				"          itemsPurchasedLast12Months = topProductPurchases.itemsPurchasedLast12Months",
+				"     ),",
+				"     skipDuplicateMapInputs: false,",
+				"     skipDuplicateMapOutputs: false) ~> flattensource",
+				"preferredproductscosmos foldDown(unroll(preferredProducts),",
+				"     mapColumn(",
+				"          userId,",
+				"          preferredProductId = preferredProducts",
+				"     ),",
+				"     skipDuplicateMapInputs: false,",
+				"     skipDuplicateMapOutputs: false) ~> flattencosmos",
+				"flattencosmos derive(preferredProductId = toInteger(preferredProductId)) ~> converttoint",
+				"flattensource, converttoint join(visitorId == userId,",
+				"     joinType:'outer',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     partitionBy('hash', 30,",
+				"          productId",
+				"     ),",
+				"     broadcast: 'left')~> joinlakeandcosmos",
+				"joinlakeandcosmos derive(isTopProduct = toBoolean(iif(isNull(productId), 'false', 'true')),",
+				"          isPreferredProduct = toBoolean(iif(isNull(preferredProductId), 'false', 'true')),",
+				"          productId = iif(isNull(productId), preferredProductId, productId),",
+				"          userId = iif(isNull(userId), visitorId, userId)) ~> derivedColumn1",
+				"derivedColumn1 filter(!isNull(productId)) ~> filter1",
+				"filter1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          UserId as integer,",
+				"          ProductId as integer,",
+				"          ItemsPurchasedLast12Months as integer,",
+				"          IsTopProduct as boolean,",
+				"          IsPreferredProduct as boolean",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     truncate:true,",
+				"     format: 'table',",
+				"     staged: true,",
+				"     allowCopyCommand: true,",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          UserId = userId,",
+				"          ProductId = productId,",
+				"          ItemsPurchasedLast12Months = itemsPurchasedLast12Months,",
+				"          IsTopProduct = isTopProduct,",
+				"          IsPreferredProduct = isPreferredProduct",
+				"     )) ~> sinksynapse"
+			]
+		}
+	}
+}
