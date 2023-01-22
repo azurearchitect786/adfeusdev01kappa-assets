@@ -5,6 +5,9 @@
 		"factoryName": {
 			"value": "adfeusdev01kappa"
 		},
+		"asacosmos01_connectionString": {
+			"value": ""
+		},
 		"asadatalake0wma39k_accountKey": {
 			"value": ""
 		},

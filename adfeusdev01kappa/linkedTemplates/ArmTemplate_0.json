@@ -7,6 +7,10 @@
 			"metadata": "Data Factory name",
 			"defaultValue": "adfeusdev01kappa"
 		},
+		"asacosmos01_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'asacosmos01'"
+		},
 		"asadatalake0wma39k_accountKey": {
 			"type": "secureString",
 			"metadata": "Secure string for 'accountKey' of 'asadatalake0wma39k'"
@@ -24,6 +28,19 @@
 		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
 	},
 	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/asacosmos01')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "CosmosDb",
+				"typeProperties": {
+					"connectionString": "[parameters('asacosmos01_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
 		{
 			"name": "[concat(parameters('factoryName'), '/asadatalake0wma39k')]",
 			"type": "Microsoft.DataFactory/factories/linkedServices",
@@ -53,6 +70,727 @@
 				}
 			},
 			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/preferredproductscosmos')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "asacosmos01",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "CosmosDbSqlApiCollection",
+				"schema": {
+					"type": "object",
+					"properties": {
+						"userId": {
+							"type": "integer"
+						},
+						"cartId": {
+							"type": "string"
+						},
+						"preferredProducts": {
+							"type": "array"
+						},
+						"productReviews": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"properties": {
+									"productId": {
+										"type": "integer"
+									},
+									"reviewText": {
+										"type": "string"
+									},
+									"reviewDate": {
+										"type": "string"
+									}
+								}
+							}
+						}
+					}
+				},
+				"typeProperties": {
+					"collectionName": "OnlineUserProfile01"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/asacosmos01')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sinktablesynapse')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "asasqlppol01",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlDWTable",
+				"schema": [
+					{
+						"name": "TransactionId",
+						"type": "uniqueidentifier"
+					},
+					{
+						"name": "CustomerId",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "ProductId",
+						"type": "smallint",
+						"precision": 5
+					},
+					{
+						"name": "Quantity",
+						"type": "tinyint",
+						"precision": 3
+					},
+					{
+						"name": "Price",
+						"type": "decimal",
+						"precision": 9,
+						"scale": 2
+					},
+					{
+						"name": "TotalAmount",
+						"type": "decimal",
+						"precision": 9,
+						"scale": 2
+					},
+					{
+						"name": "TransactionDateId",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "ProfitAmount",
+						"type": "decimal",
+						"precision": 9,
+						"scale": 2
+					},
+					{
+						"name": "Hour",
+						"type": "tinyint",
+						"precision": 3
+					},
+					{
+						"name": "Minute",
+						"type": "tinyint",
+						"precision": 3
+					},
+					{
+						"name": "StoreId",
+						"type": "smallint",
+						"precision": 5
+					}
+				],
+				"typeProperties": {
+					"schema": "wwi_perf",
+					"table": "Sale_Heap"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/asasqlppol01')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sourecesalesparquet')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "asadatalake0wma39k",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "sale-20161230-snappy.parquet",
+						"folderPath": "campaign-analytics",
+						"fileSystem": "wwi-02"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": [
+					{
+						"name": "TransactionId",
+						"type": "UTF8"
+					},
+					{
+						"name": "CustomerId",
+						"type": "INT32"
+					},
+					{
+						"name": "ProductId",
+						"type": "INT_16"
+					},
+					{
+						"name": "Quantity",
+						"type": "INT_8"
+					},
+					{
+						"name": "Price",
+						"type": "DECIMAL",
+						"precision": 38,
+						"scale": 18
+					},
+					{
+						"name": "TotalAmount",
+						"type": "DECIMAL",
+						"precision": 38,
+						"scale": 18
+					},
+					{
+						"name": "TransactionDate",
+						"type": "INT32"
+					},
+					{
+						"name": "ProfitAmount",
+						"type": "DECIMAL",
+						"precision": 38,
+						"scale": 18
+					},
+					{
+						"name": "Hour",
+						"type": "INT_8"
+					},
+					{
+						"name": "Minute",
+						"type": "INT_8"
+					},
+					{
+						"name": "StoreId",
+						"type": "INT_16"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/asadatalake0wma39k')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/topproductslake')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "asadatalake0wma39k",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "online-user-profiles-02",
+						"fileSystem": "wwi-02"
+					}
+				},
+				"schema": {
+					"type": "object",
+					"properties": {
+						"visitorId": {
+							"type": "integer"
+						},
+						"topProductPurchases": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"properties": {
+									"productId": {
+										"type": "integer"
+									},
+									"itemsPurchasedLast12Months": {
+										"type": "integer"
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/asadatalake0wma39k')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/wwiCampaignAnalytics')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "asasqlppol01",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlDWTable",
+				"schema": [
+					{
+						"name": "Region",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Country",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ProductCategory",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CampaignName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Revenue",
+						"type": "decimal",
+						"precision": 10,
+						"scale": 2
+					},
+					{
+						"name": "RevenueTarget",
+						"type": "decimal",
+						"precision": 10,
+						"scale": 2
+					},
+					{
+						"name": "City",
+						"type": "nvarchar"
+					},
+					{
+						"name": "State",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "wwi",
+					"table": "CampaignAnalytics"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/asasqlppol01')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/wwiUserTopProductPurchases')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "asasqlppol01",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlDWTable",
+				"schema": [
+					{
+						"name": "UserId",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "ProductId",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "ItemsPurchasedLast12Months",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "IsTopProduct",
+						"type": "bit"
+					},
+					{
+						"name": "IsPreferredProduct",
+						"type": "bit"
+					}
+				],
+				"typeProperties": {
+					"schema": "wwi",
+					"table": "UserTopProductPurchases"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/asasqlppol01')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/copy sales data')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "copy_sales_data",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "ParquetSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								}
+							},
+							"sink": {
+								"type": "SqlDWSink",
+								"allowCopyCommand": true,
+								"copyCommandSettings": {}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "TransactionId",
+											"type": "String"
+										},
+										"sink": {
+											"name": "TransactionId",
+											"type": "Guid"
+										}
+									},
+									{
+										"source": {
+											"name": "CustomerId",
+											"type": "Int32"
+										},
+										"sink": {
+											"name": "CustomerId",
+											"type": "Int32"
+										}
+									},
+									{
+										"source": {
+											"name": "ProductId",
+											"type": "Int16"
+										},
+										"sink": {
+											"name": "ProductId",
+											"type": "Int16"
+										}
+									},
+									{
+										"source": {
+											"name": "Quantity",
+											"type": "SByte"
+										},
+										"sink": {
+											"name": "Quantity",
+											"type": "Byte"
+										}
+									},
+									{
+										"source": {
+											"name": "Price",
+											"type": "Decimal"
+										},
+										"sink": {
+											"name": "Price",
+											"type": "Decimal"
+										}
+									},
+									{
+										"source": {
+											"name": "TotalAmount",
+											"type": "Decimal"
+										},
+										"sink": {
+											"name": "TotalAmount",
+											"type": "Decimal"
+										}
+									},
+									{
+										"source": {
+											"name": "TransactionDate",
+											"type": "Int32"
+										},
+										"sink": {
+											"name": "TransactionDateId",
+											"type": "Int32"
+										}
+									},
+									{
+										"source": {
+											"name": "ProfitAmount",
+											"type": "Decimal"
+										},
+										"sink": {
+											"name": "ProfitAmount",
+											"type": "Decimal"
+										}
+									},
+									{
+										"source": {
+											"name": "Hour",
+											"type": "SByte"
+										},
+										"sink": {
+											"name": "Hour",
+											"type": "Byte"
+										}
+									},
+									{
+										"source": {
+											"name": "Minute",
+											"type": "SByte"
+										},
+										"sink": {
+											"name": "Minute",
+											"type": "Byte"
+										}
+									},
+									{
+										"source": {
+											"name": "StoreId",
+											"type": "Int16"
+										},
+										"sink": {
+											"name": "StoreId",
+											"type": "Int16"
+										}
+									}
+								]
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "sourecesalesparquet",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "sinktablesynapse",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/sourecesalesparquet')]",
+				"[concat(variables('factoryId'), '/datasets/sinktablesynapse')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/user_profiles_flattening')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "topproductslake",
+								"type": "DatasetReference"
+							},
+							"name": "laketopprod"
+						},
+						{
+							"dataset": {
+								"referenceName": "preferredproductscosmos",
+								"type": "DatasetReference"
+							},
+							"name": "preferredproductscosmos"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "wwiUserTopProductPurchases",
+								"type": "DatasetReference"
+							},
+							"name": "sinksynapse"
+						}
+					],
+					"transformations": [
+						{
+							"name": "flattensource"
+						},
+						{
+							"name": "flattencosmos"
+						},
+						{
+							"name": "converttoint"
+						},
+						{
+							"name": "joinlakeandcosmos"
+						},
+						{
+							"name": "derivedColumn1"
+						},
+						{
+							"name": "filter1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          visitorId as integer,",
+						"          topProductPurchases as (productId as integer, itemsPurchasedLast12Months as integer)[]",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     documentForm: 'arrayOfDocuments',",
+						"     wildcardPaths:['online-user-profiles-02/*.json']) ~> laketopprod",
+						"source(output(",
+						"          userId as integer,",
+						"          cartId as string,",
+						"          preferredProducts as string[],",
+						"          productReviews as (productId as integer, reviewText as string, reviewDate as string)[]",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'document') ~> preferredproductscosmos",
+						"laketopprod foldDown(unroll(topProductPurchases),",
+						"     mapColumn(",
+						"          visitorId,",
+						"          productId = topProductPurchases.productId,",
+						"          itemsPurchasedLast12Months = topProductPurchases.itemsPurchasedLast12Months",
+						"     ),",
+						"     skipDuplicateMapInputs: false,",
+						"     skipDuplicateMapOutputs: false) ~> flattensource",
+						"preferredproductscosmos foldDown(unroll(preferredProducts),",
+						"     mapColumn(",
+						"          userId,",
+						"          preferredProductId = preferredProducts",
+						"     ),",
+						"     skipDuplicateMapInputs: false,",
+						"     skipDuplicateMapOutputs: false) ~> flattencosmos",
+						"flattencosmos derive(preferredProductId = toInteger(preferredProductId)) ~> converttoint",
+						"flattensource, converttoint join(visitorId == userId,",
+						"     joinType:'outer',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     partitionBy('hash', 30,",
+						"          productId",
+						"     ),",
+						"     broadcast: 'left')~> joinlakeandcosmos",
+						"joinlakeandcosmos derive(isTopProduct = toBoolean(iif(isNull(productId), 'false', 'true')),",
+						"          isPreferredProduct = toBoolean(iif(isNull(preferredProductId), 'false', 'true')),",
+						"          productId = iif(isNull(productId), preferredProductId, productId),",
+						"          userId = iif(isNull(userId), visitorId, userId)) ~> derivedColumn1",
+						"derivedColumn1 filter(!isNull(productId)) ~> filter1",
+						"filter1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          UserId as integer,",
+						"          ProductId as integer,",
+						"          ItemsPurchasedLast12Months as integer,",
+						"          IsTopProduct as boolean,",
+						"          IsPreferredProduct as boolean",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     truncate:true,",
+						"     format: 'table',",
+						"     staged: true,",
+						"     allowCopyCommand: true,",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError',",
+						"     mapColumn(",
+						"          UserId = userId,",
+						"          ProductId = productId,",
+						"          ItemsPurchasedLast12Months = itemsPurchasedLast12Months,",
+						"          IsTopProduct = isTopProduct,",
+						"          IsPreferredProduct = isPreferredProduct",
+						"     )) ~> sinksynapse"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/topproductslake')]",
+				"[concat(variables('factoryId'), '/datasets/preferredproductscosmos')]",
+				"[concat(variables('factoryId'), '/datasets/wwiUserTopProductPurchases')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/executemdf')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "demoflow",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "user_profiles_flattening",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"laketopprod": {},
+									"preferredproductscosmos": {},
+									"sinksynapse": {}
+								}
+							},
+							"staging": {
+								"linkedService": {
+									"referenceName": "asadatalake0wma39k",
+									"type": "LinkedServiceReference"
+								},
+								"folderPath": "staging/stagingdir"
+							},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/user_profiles_flattening')]",
+				"[concat(variables('factoryId'), '/linkedServices/asadatalake0wma39k')]"
+			]
 		}
 	]
 }

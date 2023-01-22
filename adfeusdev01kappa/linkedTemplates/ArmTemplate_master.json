@@ -7,6 +7,10 @@
 			"metadata": "Data Factory name",
 			"defaultValue": "adfeusdev01kappa"
 		},
+		"asacosmos01_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'asacosmos01'"
+		},
 		"asadatalake0wma39k_accountKey": {
 			"type": "secureString",
 			"metadata": "Secure string for 'accountKey' of 'asadatalake0wma39k'"
@@ -45,6 +49,9 @@
 				"parameters": {
 					"factoryName": {
 						"value": "[parameters('factoryName')]"
+					},
+					"asacosmos01_connectionString": {
+						"value": "[parameters('asacosmos01_connectionString')]"
 					},
 					"asadatalake0wma39k_accountKey": {
 						"value": "[parameters('asadatalake0wma39k_accountKey')]"
